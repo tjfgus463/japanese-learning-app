@@ -1,0 +1,5 @@
+{
+  "name": "Kotoba Master: Japanese Learning Game",
+  "description": "A Japanese learning application that translates dialogues, tokenizes sentences, and challenges users to reassemble them in the correct order with furigana support.",
+  "requestFramePermissions": []
+}
