@@ -9,7 +9,7 @@ import { seedData } from "./src/services/seedData";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Initialize Database with seed data if empty
-dbService.seedSqlite(seedData);
+dbService.seed(seedData).catch(err => console.error("Initial seeding failed:", err));
 
 async function startServer() {
   const app = express();
@@ -24,9 +24,11 @@ async function startServer() {
     try {
       const apiKey = customApiKey || process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(400).json({ error: "API Key is missing" });
+        console.error("Translation failed: API Key is missing");
+        return res.status(400).json({ error: "API Key is missing. Please enter it in Settings." });
       }
 
+      console.log(`Translating: "${text}" using ${customApiKey ? "custom" : "server"} API key`);
       const ai = new GoogleGenAI({ apiKey });
       
       const response = await ai.models.generateContent({

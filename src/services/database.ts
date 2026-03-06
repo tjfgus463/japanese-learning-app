@@ -140,15 +140,43 @@ class DatabaseService {
     }
   }
 
-  // Seed helper for SQLite (only used locally)
-  seedSqlite(data: Scenario[]) {
-    if (this.useSupabase) return;
-    const count = this.sqlite.prepare("SELECT count(*) as count FROM scenarios").get() as { count: number };
-    if (count.count === 0) {
-      const insert = this.sqlite.prepare("INSERT INTO scenarios (korean, japanese, tokens, level, category) VALUES (?, ?, ?, ?, ?)");
-      data.forEach(d => {
-        insert.run(d.korean, d.japanese, JSON.stringify(d.tokens), d.level, d.category);
-      });
+  // Generic seed method for both SQLite and Supabase
+  async seed(data: Scenario[]) {
+    if (this.useSupabase && this.supabase) {
+      const { count, error: countError } = await this.supabase
+        .from('scenarios')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        console.error("Error checking Supabase count:", countError);
+        return;
+      }
+
+      if (count === 0) {
+        console.log("Seeding Supabase with initial data...");
+        const { error: insertError } = await this.supabase
+          .from('scenarios')
+          .insert(data.map(d => ({
+            korean: d.korean,
+            japanese: d.japanese,
+            tokens: d.tokens,
+            level: d.level,
+            category: d.category
+          })));
+        
+        if (insertError) console.error("Error seeding Supabase:", insertError);
+        else console.log("Supabase seeded successfully!");
+      }
+    } else if (this.sqlite) {
+      const count = this.sqlite.prepare("SELECT count(*) as count FROM scenarios").get() as { count: number };
+      if (count.count === 0) {
+        console.log("Seeding SQLite with initial data...");
+        const insert = this.sqlite.prepare("INSERT INTO scenarios (korean, japanese, tokens, level, category) VALUES (?, ?, ?, ?, ?)");
+        data.forEach(d => {
+          insert.run(d.korean, d.japanese, JSON.stringify(d.tokens), d.level, d.category);
+        });
+        console.log("SQLite seeded successfully!");
+      }
     }
   }
 }
