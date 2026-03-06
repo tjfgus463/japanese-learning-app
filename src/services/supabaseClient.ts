@@ -19,39 +19,51 @@ export interface Scenario {
 
 export const scenarioService = {
   async getScenarios(): Promise<Scenario[]> {
-    if (!supabase) {
-      console.warn("Supabase credentials missing. Using mock data or local API.");
-      const res = await fetch('/api/scenarios');
-      return res.json();
+    try {
+      if (!supabase) {
+        console.warn("Supabase credentials missing. Using local API.");
+        const res = await fetch('/api/scenarios');
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      }
+
+      const { data, error } = await supabase
+        .from('scenarios')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error in getScenarios:", error);
+      return [];
     }
-
-    const { data, error } = await supabase
-      .from('scenarios')
-      .select('*')
-      .order('id', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
   },
 
   async addScenario(scenario: Omit<Scenario, 'id'>) {
-    if (!supabase) {
-      const res = await fetch('/api/scenarios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scenario)
-      });
-      return res.json();
+    try {
+      if (!supabase) {
+        const res = await fetch('/api/scenarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scenario)
+        });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      }
+
+      const { data, error } = await supabase
+        .from('scenarios')
+        .insert([scenario])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error in addScenario:", error);
+      throw error;
     }
-
-    const { data, error } = await supabase
-      .from('scenarios')
-      .insert([scenario])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
   },
 
   async searchScenario(korean: string): Promise<Scenario | null> {
