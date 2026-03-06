@@ -1,4 +1,3 @@
-import Database from "better-sqlite3";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
@@ -22,18 +21,29 @@ class DatabaseService {
   private useSupabase: boolean = false;
 
   constructor() {
+    this.init();
+  }
+
+  private async init() {
     if (SUPABASE_URL && SUPABASE_KEY) {
       this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
       this.useSupabase = true;
       console.log("Using Supabase as database");
     } else {
-      this.sqlite = new Database("japanese_learning.db");
-      this.initSqlite();
-      console.log("Using local SQLite as database");
+      try {
+        // Dynamic import to avoid issues in environments where better-sqlite3 isn't supported
+        const Database = (await import("better-sqlite3")).default;
+        this.sqlite = new Database("japanese_learning.db");
+        this.initSqlite();
+        console.log("Using local SQLite as database");
+      } catch (err) {
+        console.error("Failed to initialize SQLite:", err);
+      }
     }
   }
 
   private initSqlite() {
+    if (!this.sqlite) return;
     this.sqlite.exec(`
       CREATE TABLE IF NOT EXISTS scenarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
